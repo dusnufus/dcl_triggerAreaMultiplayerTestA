@@ -1,0 +1,88 @@
+import { engine, Transform, executeTask } from '@dcl/sdk/ecs'
+import { Vector3, Quaternion } from '@dcl/sdk/math'
+import { getUserData, UserData } from '~system/UserIdentity'
+import { GameManager } from './gameMgr'
+
+import { movePlayerTo, triggerEmote  } from '~system/RestrictedActions'
+import { FallTriggerZone } from './components/triggerZones'
+
+export class PlayerManager{
+
+	gameMgr: GameManager
+
+	playerInfoRec: boolean
+	playerUserData: any
+	pos: Vector3
+	rot: Quaternion
+
+	// Checkpoint system
+    currentCheckpoint: string = 'none'
+    checkpointPosition: Vector3 = Vector3.create(8, 0, 8)
+    checkpointLookAt: Vector3 = Vector3.create(0, 0, 0)
+
+	checkpointSet: boolean = false
+	headedUp: boolean = true
+	upperZoneActive: boolean = false
+
+	constructor(_gameMgr: GameManager){
+
+		console.log("PlayerManager: constructor running")
+
+		this.gameMgr = _gameMgr
+
+        //init player info status
+		this.playerInfoRec = false
+		this.pos = Vector3.create(0,0,0)
+		this.rot = Quaternion.fromEulerDegrees(0,0,0)
+
+		//init checkpoint
+        this.currentCheckpoint = 'none'
+        this.checkpointPosition = Vector3.create(8, 0, 8)
+        this.checkpointLookAt = Vector3.create(8, 0, 16)
+		
+		this.checkpointSet = false
+
+        //start async function to get player data
+		executeTask(async () => {
+		  this.playerUserData = await getUserData({})
+		  this.initPlayerTracking()
+		  //console.log('PLAYER DATA NAME.....' + this.playerUserData.data.displayName)
+		})
+		
+	}
+
+	initPlayerTracking(){
+
+		//grab the players current position as the starting value
+		this.pos = Transform.get(engine.PlayerEntity).position
+		this.rot = Transform.get(engine.PlayerEntity).rotation
+
+		//start the tracking system for pos/rot
+		engine.addSystem(  () => {
+			this.pos = Transform.get(engine.PlayerEntity).position
+			this.rot = Transform.get(engine.PlayerEntity).rotation
+		})
+
+		//mark that we are all set up
+		this.playerInfoRec = true
+	}
+
+	// Set a new checkpoint
+    setCheckpoint(checkpointId: string, position: Vector3, lookAt: Vector3) {
+        this.currentCheckpoint = checkpointId
+        this.checkpointPosition = position
+        this.checkpointLookAt = lookAt
+        console.log(`Checkpoint set: ${checkpointId}`)
+    }
+
+    // Respawn at current checkpoint
+    respawnAtCheckpoint() {
+        console.log(`Respawning at checkpoint: ${this.currentCheckpoint}`)
+		movePlayerTo({
+			//-34,50,52 (temple landing)
+			newRelativePosition: this.checkpointPosition,
+			cameraTarget: this.checkpointLookAt
+		})
+    }
+	
+}

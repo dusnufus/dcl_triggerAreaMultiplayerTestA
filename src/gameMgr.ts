@@ -50,6 +50,8 @@ export class GameManager{
 
         uiSetup(this)
 
+        console.log("player entity: " + engine.PlayerEntity)
+
     }
     
 }

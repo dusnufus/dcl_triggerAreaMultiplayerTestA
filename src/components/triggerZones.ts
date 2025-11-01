@@ -1,4 +1,4 @@
-import { engine, Transform, Entity, TriggerArea, triggerAreaEventsSystem, MeshRenderer, ColliderLayer, Material } from '@dcl/sdk/ecs'
+import { engine, Transform, Entity, TriggerArea, triggerAreaEventsSystem, MeshRenderer, ColliderLayer, Material, TriggerAreaResult, PBTriggerAreaResult } from '@dcl/sdk/ecs'
 
 import { GameManager } from '../gameMgr'
 import { Vector3, Quaternion, Color4 } from '@dcl/sdk/math'
@@ -7,6 +7,7 @@ import { Vector3, Quaternion, Color4 } from '@dcl/sdk/math'
 export function CheckpointTriggerZone(
     _gameMgr: GameManager, 
     _checkpointId: string,
+    //_playerId: string,
     _pos: Vector3, 
     _scale: Vector3, 
     _respawnPos: Vector3,
@@ -48,10 +49,34 @@ export function CheckpointTriggerZone(
         }
     }
 
+     // Event when trigger area activated
+     /* triggerAreaEventsSystem.onTriggerEnter(e, (enteringEntities) => {
+        // Check if the local player is one of the entities that entered
+        if (enteringEntities.triggeredEntity == engine.PlayerEntity) {
+            // Only update if this isn't already the current checkpoint
+            if (_gameMgr.playerMgr.currentCheckpoint !== _checkpointId) {
+                console.log(`CheckpointTriggerZone: ${_checkpointId} activated for LOCAL player`)
+                _gameMgr.playerMgr.setCheckpoint(_checkpointId, _respawnPos, _respawnLookAt)
+            }
+        }
+    })  */
+
     // Event when trigger area activated
-    triggerAreaEventsSystem.onTriggerEnter(e, (r) => {
+    /* triggerAreaEventsSystem.onTriggerEnter(e, (r) => {
         // Only update if this isn't already the current checkpoint
         if (_gameMgr.playerMgr.currentCheckpoint !== _checkpointId) {
+            console.log(`CheckpointTriggerZone: ${_checkpointId} activated`)
+            _gameMgr.playerMgr.setCheckpoint(_checkpointId, _respawnPos, _respawnLookAt)
+        }
+    }) */
+
+    // Event when trigger area activated
+    triggerAreaEventsSystem.onTriggerEnter(e, (r) => {
+        //console.log("trigger: " + r.trigger?.entity)
+
+
+        // Only update if this isn't already the current checkpoint
+        if (r.trigger?.entity == engine.PlayerEntity && _gameMgr.playerMgr.currentCheckpoint !== _checkpointId) {
             console.log(`CheckpointTriggerZone: ${_checkpointId} activated`)
             _gameMgr.playerMgr.setCheckpoint(_checkpointId, _respawnPos, _respawnLookAt)
         }
@@ -81,8 +106,12 @@ export function FallTriggerZone(_gameMgr: GameManager, _pos: Vector3, _scale: Ve
 
     // Event when trigger area activated (player fell)
     triggerAreaEventsSystem.onTriggerEnter(e, (r) => {
-        console.log("FallTriggerZone: player fell, respawning at checkpoint")
-        _gameMgr.playerMgr.respawnAtCheckpoint()
+        if(r.trigger?.entity == engine.PlayerEntity){
+
+            console.log("FallTriggerZone: player fell, respawning at checkpoint")
+            _gameMgr.playerMgr.respawnAtCheckpoint()
+        }
+        
         
         // Optional: Show a message to the player
         //_gameMgr.showMessage("Respawning at checkpoint...")
